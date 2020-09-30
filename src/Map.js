@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Text, Platform, StyleSheet, View, TouchableOpacity, Alert } from 'react-native';
+import { Text, Platform, StyleSheet, View, TouchableOpacity, Alert, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Header from './Header';
 import Parks from './Parks';
@@ -12,15 +12,16 @@ import AsyncStorage from '@react-native-community/async-storage';
 export default class Map extends Component {
     constructor(props) {
         super(props);
-
+        this._map = React.createRef()
         this.state = {
+            carRegion: {},
             region: {
                 latitude: 37.893071,
                 longitude: 27.264429,
                 latitudeDelta: 0.01,
                 longitudeDelta: 0.01,
             },
-            marker: {
+            carMarker: {
                 latitude: 37.865279,
                 longitude: 27.263038,
             },
@@ -28,9 +29,10 @@ export default class Map extends Component {
     }
     async componentDidMount() {
         // request(PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION).then((result) => { });
+        console.log("Platform=", Platform.OS)
         this.getUserPosition();
         const permissions =
-            Platform.OS == 'ios'
+            Platform.OS === 'ios'
                 ? [
                     PERMISSIONS.IOS.LOCATION_ALWAYS,
                     PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
@@ -39,10 +41,7 @@ export default class Map extends Component {
                     PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
                     PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
                 ];
-        requestMultiple([
-            PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
-            PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-        ])
+        requestMultiple(permissions)
             .then((statuses) => {
                 this.getUserPosition();
                 console.log('permissions=', statuses);
@@ -51,29 +50,33 @@ export default class Map extends Component {
         //const data = await this.getCurrentPosition()
     }
 
-    onRegionChange = (region) => {
+    onRegionChangeComplete = (region) => {
         console.log('region', region);
         this.setState({ region });
     };
 
     async addMarker(e) {
         //console.log(e.nativeEvent.coordinate)
-        this.setState({
-            region: {
+        await this.setState({
+            carRegion: {
                 ...this.state.region,
                 latitude: e.nativeEvent.coordinate.latitude,
                 longitude: e.nativeEvent.coordinate.longitude,
             },
-            marker: e.nativeEvent.coordinate,
+            carMarker: e.nativeEvent.coordinate,
             title: 'Arabamın Konumu',
             description: 'Arabam Burada',
         });
+        this._map.current.animateToRegion(
+            this.state.carRegion,
+            1000
+        );
         this.setStore();
     }
 
     async setStore() {
         try {
-            const jsonValue = JSON.stringify(this.state.region);
+            const jsonValue = JSON.stringify(this.state.carRegion);
             await AsyncStorage.setItem('@carPosition', jsonValue);
         } catch (e) {
             Alert.alert('Yazılamadı');
@@ -88,7 +91,7 @@ export default class Map extends Component {
                 latitude: newRegion.latitude,
                 longitude: newRegion.longitude,
             },
-            marker: newRegion,
+            carMarker: newRegion,
             title: newRegion.title,
             description: newRegion.description,
         });
@@ -113,35 +116,54 @@ export default class Map extends Component {
         };
     }
     async getCarPosition() {
+        let jsonValue;
         try {
-            const jsonValue = await AsyncStorage.getItem('@carPosition');
-            return jsonValue != null ? JSON.parse(jsonValue) : null;
+            jsonValue = await AsyncStorage.getItem('@carPosition');
+            jsonValue != null ? this.setState({
+                carMarker: {
+                    latitude: JSON.parse(jsonValue).latitude,
+                    longitude: JSON.parse(jsonValue).longitude,
+                }
+            }) : null;
         } catch (e) {
-            // error reading value
+            //error reading value
         }
+        this._map.current.animateToRegion(
+            JSON.parse(jsonValue),
+            1000
+        );
+
     }
+
 
     render() {
         return (
             <View style={styles.container}>
                 <Header />
                 <MapView
+                    ref={this._map}
                     region={this.state.region}
                     loadingEnabled={true}
                     showsUserLocation={true}
-                    onRegionChange={this.onRegionChange}
+                    onRegionChangeComplete={this.onRegionChangeComplete}
                     style={styles.map}
-                    onPress={(e) => this.addMarker(e)}
+                    onLongPress={(e) => this.addMarker(e)}
                 //showsMyLocationButton={true}
                 //showsCompass={true}
                 //showsScale={true}
                 //onUserLocationChange={(position) => console.log(position)}
                 >
                     <Marker
-                        coordinate={this.state.marker}
+                        coordinate={this.state.carMarker}
                         title={this.state.title}
                         description={this.state.description}
-                    />
+                    >
+                        <Image
+                            source={require('../assets/car_marker.png')}
+                            style={{ width: 40, height: 40, marginBottom: 30 }}
+                            resizeMode="contain"
+                        />
+                    </Marker>
                 </MapView>
                 <TouchableOpacity
                     style={styles.currentPosition}
@@ -172,9 +194,9 @@ const styles = StyleSheet.create({
         zIndex: 1,
         //backgroundColor: "red",
         position: 'absolute',
-        right: 5,
+        right: 10,
         //left: 0,
-        bottom: 180,
+        bottom: 60,
     },
     carPosition: {
         zIndex: 1,
@@ -182,6 +204,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         //right: 0,
         left: 10,
-        bottom: 180,
+        bottom: 60,
     },
 });
