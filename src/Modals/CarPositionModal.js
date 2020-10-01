@@ -10,7 +10,7 @@ export default function CarPositionModal({ isVisible, closeModal, setPosition, r
             <Modal
                 isVisible={isVisible}
                 style={styles.modalStyle}
-                onBackdropPress={() => closeModal()}
+            //onBackdropPress={() => closeModal()}
             >
                 <View style={styles.content}>
                     <Text style={{ fontSize: 20 }}>Arabanızın konumu doğru mu?</Text>

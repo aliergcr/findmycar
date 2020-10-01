@@ -4,13 +4,14 @@ import MapView, { Marker } from 'react-native-maps';
 import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 //import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-community/async-storage';
 
 import Header from './Header';
 import Parks from './Parks';
 import CarPositionModal from "./Modals/CarPositionModal"
 import WarningModal from "./Modals/WarningModal"
+import FooterButton from './Components/FooterButton';
 
 export default class Map extends Component {
     constructor(props) {
@@ -58,7 +59,7 @@ export default class Map extends Component {
     };
 
     async addMarker(e) {
-        //console.log(e.nativeEvent.coordinate)
+        console.log(e.nativeEvent.coordinate)
         await this.setState({
             carRegion: {
                 ...this.state.region,
@@ -81,6 +82,7 @@ export default class Map extends Component {
     }
 
     async setStore() {
+
         try {
             const jsonValue = JSON.stringify(this.state.carRegion);
             await AsyncStorage.setItem('@carPosition', jsonValue);
@@ -139,7 +141,7 @@ export default class Map extends Component {
         } catch (e) {
             //error reading value
         }
-        console.log("jason value", jsonValue)
+        //console.log("jason value", jsonValue)
         if (jsonValue != null) {
             this._map.current.animateToRegion(
                 JSON.parse(jsonValue),
@@ -185,28 +187,22 @@ export default class Map extends Component {
                         coordinate={this.state.carMarker}
                         title={this.state.title}
                         description={this.state.description}
+                        //icon={require('../assets/car_marker.png')}
+                        draggable
+                        onDragEnd={(e) => this.addMarker(e)}
                     >
-                        <Image
+                        {/* <Image
                             source={require('../assets/car_marker.png')}
                             style={{ width: 40, height: 40, marginBottom: 30 }}
                             resizeMode="contain"
-                        />
+                        /> */}
                     </Marker>
                         : null}
                 </MapView>
                 <View style={styles.footer}>
-                    <TouchableOpacity
-                        style={styles.carPosition}
-                        onPress={() => this.getCarPosition()}>
-                        <Icon name="car" size={30} color="#0c5496" />
-                        <Text style={{ color: "#0c5496" }}>Aracım</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.currentPosition}
-                        onPress={() => this.getUserPosition()}>
-                        <Icon name="crosshairs" size={30} color="#0c5496" />
-                        <Text style={{ color: "#0c5496" }}>Konumum</Text>
-                    </TouchableOpacity>
+                    <FooterButton iconName="car" onPress={() => this.getCarPosition()} text="Aracım" />
+                    <FooterButton iconName="navigate-circle-outline" onPress={() => this.getUserPosition()} text="Rota Çiz" />
+                    <FooterButton iconName="locate-outline" onPress={() => this.getUserPosition()} text="Konumum" />
 
                 </View>
                 {/* <Parks selectPark={(newRegion) => this.selectPark(newRegion)} /> */}
