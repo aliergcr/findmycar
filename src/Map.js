@@ -1,30 +1,32 @@
 import React, { Component } from 'react';
 import { Text, Platform, StyleSheet, View, TouchableOpacity, Alert, Image } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import Header from './Header';
-import Parks from './Parks';
 import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 //import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-community/async-storage';
 
+import Header from './Header';
+import Parks from './Parks';
+import CarPositionModal from "./Modals/CarPositionModal"
+import WarningModal from "./Modals/WarningModal"
+
 export default class Map extends Component {
     constructor(props) {
         super(props);
         this._map = React.createRef()
         this.state = {
+            carPositionModalVisible: false,
             carRegion: {},
+            isCarPosition: false,
             region: {
                 latitude: 37.893071,
                 longitude: 27.264429,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
             },
-            carMarker: {
-                latitude: 37.865279,
-                longitude: 27.263038,
-            },
+            carMarker: {},
         };
     }
     async componentDidMount() {
@@ -66,12 +68,16 @@ export default class Map extends Component {
             carMarker: e.nativeEvent.coordinate,
             title: 'Arabamın Konumu',
             description: 'Arabam Burada',
+            carPositionModalVisible: true,
+            isCarPosition: true,
+            warningModalVisible: false
         });
         this._map.current.animateToRegion(
             this.state.carRegion,
             1000
         );
-        this.setStore();
+        //this.setStore();
+
     }
 
     async setStore() {
@@ -81,6 +87,9 @@ export default class Map extends Component {
         } catch (e) {
             Alert.alert('Yazılamadı');
         }
+        this.setState({
+            carPositionModalVisible: false,
+        })
     }
 
     selectPark(newRegion) {
@@ -116,6 +125,7 @@ export default class Map extends Component {
         };
     }
     async getCarPosition() {
+
         let jsonValue;
         try {
             jsonValue = await AsyncStorage.getItem('@carPosition');
@@ -123,15 +133,33 @@ export default class Map extends Component {
                 carMarker: {
                     latitude: JSON.parse(jsonValue).latitude,
                     longitude: JSON.parse(jsonValue).longitude,
-                }
+                },
+                isCarPosition: true
             }) : null;
         } catch (e) {
             //error reading value
         }
-        this._map.current.animateToRegion(
-            JSON.parse(jsonValue),
-            1000
-        );
+        console.log("jason value", jsonValue)
+        if (jsonValue != null) {
+            this._map.current.animateToRegion(
+                JSON.parse(jsonValue),
+                1000
+            );
+        } else {
+            this.setState({ warningModalVisible: true })
+        }
+    }
+
+    async resetMarker() {
+        try {
+            await AsyncStorage.removeItem('@carPosition')
+        } catch (e) {
+            // remove error
+        }
+        this.setState({
+            isCarPosition: false,
+            carPositionModalVisible: false
+        })
 
     }
 
@@ -153,7 +181,7 @@ export default class Map extends Component {
                 //showsScale={true}
                 //onUserLocationChange={(position) => console.log(position)}
                 >
-                    <Marker
+                    {this.state.isCarPosition ? <Marker
                         coordinate={this.state.carMarker}
                         title={this.state.title}
                         description={this.state.description}
@@ -164,18 +192,36 @@ export default class Map extends Component {
                             resizeMode="contain"
                         />
                     </Marker>
+                        : null}
                 </MapView>
-                <TouchableOpacity
-                    style={styles.currentPosition}
-                    onPress={() => this.getUserPosition()}>
-                    <Icon name="crosshairs" size={30} color="#0c5496" />
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.carPosition}
-                    onPress={() => this.getCarPosition()}>
-                    <Icon name="car" size={30} color="#0c5496" />
-                </TouchableOpacity>
+                <View style={styles.footer}>
+                    <TouchableOpacity
+                        style={styles.carPosition}
+                        onPress={() => this.getCarPosition()}>
+                        <Icon name="car" size={30} color="#0c5496" />
+                        <Text style={{ color: "#0c5496" }}>Aracım</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.currentPosition}
+                        onPress={() => this.getUserPosition()}>
+                        <Icon name="crosshairs" size={30} color="#0c5496" />
+                        <Text style={{ color: "#0c5496" }}>Konumum</Text>
+                    </TouchableOpacity>
+
+                </View>
                 {/* <Parks selectPark={(newRegion) => this.selectPark(newRegion)} /> */}
+                <CarPositionModal
+                    isVisible={this.state.carPositionModalVisible}
+                    closeModal={() => this.setState({ carPositionModalVisible: false })}
+                    setPosition={() => this.setStore()}
+                    resetMarker={() => this.resetMarker()}
+                />
+                <WarningModal
+                    isVisible={this.state.warningModalVisible}
+                    closeModal={() => this.setState({ warningModalVisible: false })}
+                    warningText="Kaydedilmiş araç konumu yoktur. Lütfen önce aracınızın konumunu kaydetmek için istediğiniz konumda haritaya basılı tutun"
+
+                />
             </View>
         );
     }
@@ -187,23 +233,26 @@ const styles = StyleSheet.create({
         // alignItems: "center",
         // justifyContent: "center"
     },
+    footer: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+        alignItems: "center",
+        height: 80,
+        backgroundColor: "#fff",
+    },
     map: {
         flex: 3,
     },
     currentPosition: {
-        zIndex: 1,
-        //backgroundColor: "red",
-        position: 'absolute',
-        right: 10,
-        //left: 0,
-        bottom: 60,
+        justifyContent: "center",
+        alignItems: "center",
+        marginHorizontal: 5,
+        // borderColor: "#000",
+        // borderWidth: 1
     },
     carPosition: {
-        zIndex: 1,
-        //backgroundColor: "yellow",
-        position: 'absolute',
-        //right: 0,
-        left: 10,
-        bottom: 60,
+        justifyContent: "center",
+        alignItems: "center",
+        marginHorizontal: 5
     },
 });
