@@ -169,7 +169,6 @@ export default class Map extends Component {
     render() {
         return (
             <View style={styles.container}>
-                <Header />
                 <MapView
                     ref={this._map}
                     region={this.state.region}
