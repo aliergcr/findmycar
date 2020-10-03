@@ -1,14 +1,11 @@
 import React, { Component } from 'react';
-import { Text, Platform, StyleSheet, View, TouchableOpacity, Alert, Image } from 'react-native';
+import { Text, Platform, StyleSheet, View, Alert } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 //import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
-import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-community/async-storage';
 
-import Header from './Header';
-import Parks from './Parks';
 import CarPositionModal from "./Modals/CarPositionModal"
 import WarningModal from "./Modals/WarningModal"
 import FooterButton from './Components/FooterButton';
