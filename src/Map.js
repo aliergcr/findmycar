@@ -5,6 +5,7 @@ import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 //import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-community/async-storage';
+import Geocoder from 'react-native-geocoding';
 
 import CarPositionModal from "./Modals/CarPositionModal"
 import WarningModal from "./Modals/WarningModal"
@@ -30,6 +31,7 @@ export default class Map extends Component {
     async componentDidMount() {
         // request(PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION).then((result) => { });
         console.log("Platform=", Platform.OS)
+        Geocoder.init("AIzaSyBGR61fCqLig4dnrLXOD5CyCiXR4NVqtuc");
         this.getUserPosition();
         const permissions =
             Platform.OS === 'ios'
@@ -86,9 +88,19 @@ export default class Map extends Component {
         } catch (e) {
             Alert.alert('Yazılamadı');
         }
+        this.getAdress()
         this.setState({
             carPositionModalVisible: false,
         })
+    }
+
+    async setAdressToStore(adress) {
+
+        try {
+            await AsyncStorage.setItem('@carAdress', adress);
+        } catch (e) {
+            Alert.alert('Yazılamadı');
+        }
     }
 
     selectPark(newRegion) {
@@ -147,11 +159,24 @@ export default class Map extends Component {
         } else {
             this.setState({ warningModalVisible: true })
         }
+        this.getAdress()
+    }
+
+    async getAdress() {
+        Geocoder.from(this.state.carMarker)
+            .then(json => {
+                //console.log(json)
+                var addressComponent = json.results[0].formatted_address;
+                this.setAdressToStore(addressComponent)
+            })
+            .catch(error => console.warn(error))
+
     }
 
     async resetMarker() {
         try {
             await AsyncStorage.removeItem('@carPosition')
+            await AsyncStorage.removeItem('@carAdress')
         } catch (e) {
             // remove error
         }
