@@ -11,7 +11,7 @@ export default HomeScreen = ({ navigation }) => {
         getAdress()
     }, [])
 
-    async function getAdress() {
+    const getAdress = async () => {
         //console.log("get adress")
         try {
             const carAdress = await AsyncStorage.getItem("@carAdress")
@@ -20,7 +20,6 @@ export default HomeScreen = ({ navigation }) => {
         } catch (error) {
             console.log("Car adress Error=", error)
         }
-
     }
 
 
