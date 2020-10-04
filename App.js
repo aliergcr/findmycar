@@ -11,9 +11,9 @@ const Stack = createStackNavigator();
 export default App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Map">
-        <Stack.Screen name="Map" component={Map} options={{ title: 'Araç Konumu' }} />
+      <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Map" component={Map} options={{ title: 'Araç Konumu' }} />
       </Stack.Navigator>
     </NavigationContainer>
   )
