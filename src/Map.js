@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Text, Platform, StyleSheet, View, Alert } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 //import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
@@ -18,6 +18,7 @@ export default class Map extends Component {
         this.state = {
             carPositionModalVisible: false,
             carRegion: {},
+            userPosition: {},
             isCarPosition: false,
             region: {
                 latitude: 37.893071,
@@ -28,37 +29,22 @@ export default class Map extends Component {
             carMarker: {},
         };
     }
-    async componentDidMount() {
-        // request(PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION).then((result) => { });
-        console.log("Platform=", Platform.OS)
-        Geocoder.init("AIzaSyBGR61fCqLig4dnrLXOD5CyCiXR4NVqtuc");
-        this.getUserPosition();
-        const permissions =
-            Platform.OS === 'ios'
-                ? [
-                    PERMISSIONS.IOS.LOCATION_ALWAYS,
-                    PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
-                ]
-                : [
-                    PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
-                    PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-                ];
-        requestMultiple(permissions)
-            .then((statuses) => {
-                this.getUserPosition();
-                console.log('permissions=', statuses);
-            })
-            .catch((err) => console.log('Permissions Error', err));
-        //const data = await this.getCurrentPosition()
+
+    componentDidMount() {
+        if (this.props.route.params.type === "findCar") {
+            this.getCarPosition()
+        } else if (this.props.route.params.type === "parkCar") {
+            this.getUserPosition();
+        }
     }
 
     onRegionChangeComplete = (region) => {
-        console.log('region', region);
+        console.log('region change finish');
         this.setState({ region });
     };
 
     async addMarker(e) {
-        console.log(e.nativeEvent.coordinate)
+        //console.log(e.nativeEvent.coordinate)
         await this.setState({
             carRegion: {
                 ...this.state.region,
@@ -66,27 +52,21 @@ export default class Map extends Component {
                 longitude: e.nativeEvent.coordinate.longitude,
             },
             carMarker: e.nativeEvent.coordinate,
-            title: 'Arabamın Konumu',
-            description: 'Arabam Burada',
+            title: 'Car Location',
+            description: 'Car is here',
             carPositionModalVisible: true,
             isCarPosition: true,
             warningModalVisible: false
         });
-        this._map.current.animateToRegion(
-            this.state.carRegion,
-            1000
-        );
-        //this.setStore();
-
+        this.animateToRegion(this.state.carRegion)
     }
 
     async setStore() {
-
         try {
             const jsonValue = JSON.stringify(this.state.carRegion);
             await AsyncStorage.setItem('@carPosition', jsonValue);
         } catch (e) {
-            Alert.alert('Yazılamadı');
+            Alert.alert("Car location error, please try to set car location again!!! ");
         }
         this.getAdress()
         this.setState({
@@ -95,7 +75,6 @@ export default class Map extends Component {
     }
 
     async setAdressToStore(adress) {
-
         try {
             await AsyncStorage.setItem('@carAdress', adress);
         } catch (e) {
@@ -117,16 +96,28 @@ export default class Map extends Component {
         });
     }
 
+    async animateToRegion(coords) {
+        console.log("aniamte to region")
+        await this._map.current.animateToRegion(
+            coords,
+            1000
+        );
+    }
+
     getUserPosition() {
+        console.log("get user position")
         Geolocation.getCurrentPosition(async (position) => {
-            //console.log("position=", position)
-            await this.setState({
-                region: {
+            setTimeout(() => {
+                this.setState({ userPosition: position.coords })
+                this.animateToRegion({
                     ...this.state.region,
                     latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                },
-            });
+                    longitude: position.coords.longitude
+                })
+            }, 1000);
+
+            //console.log("position=", position)
+
         }),
             (error) => console.log('error', error),
         {
@@ -152,10 +143,10 @@ export default class Map extends Component {
         }
         //console.log("jason value", jsonValue)
         if (jsonValue != null) {
-            this._map.current.animateToRegion(
-                JSON.parse(jsonValue),
-                1000
-            );
+            setTimeout(() => {
+                this.animateToRegion(JSON.parse(jsonValue))
+            }, 1000);
+
         } else {
             this.setState({ warningModalVisible: true })
         }
@@ -170,7 +161,6 @@ export default class Map extends Component {
                 this.setAdressToStore(addressComponent)
             })
             .catch(error => console.warn(error))
-
     }
 
     async resetMarker() {
@@ -184,15 +174,14 @@ export default class Map extends Component {
             isCarPosition: false,
             carPositionModalVisible: false
         })
-
     }
-
 
     render() {
         return (
             <View style={styles.container}>
                 <MapView
                     ref={this._map}
+                    provider={PROVIDER_GOOGLE}
                     region={this.state.region}
                     loadingEnabled={true}
                     showsUserLocation={true}

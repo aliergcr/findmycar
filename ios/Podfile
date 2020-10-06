@@ -13,7 +13,12 @@ target 'findmycar' do
   pod 'Permission-LocationWhenInUse', :path => "#{permissions_path}/LocationWhenInUse.podspec"
   pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
   
-
+  # React Native Maps dependencies
+  rn_maps_path = '../node_modules/react-native-maps'
+  pod 'react-native-google-maps', :path => rn_maps_path
+  pod 'GoogleMaps'
+  pod 'Google-Maps-iOS-Utils'
+      
   target 'findmycarTests' do
     inherit! :complete
     # Pods for testing
