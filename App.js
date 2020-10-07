@@ -12,8 +12,8 @@ export default App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Map" component={Map} options={{ title: 'Araç Konumu' }} />
+        <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Find My Car" }} />
+        <Stack.Screen name="Map" component={Map} options={{ title: 'Car Location' }} />
       </Stack.Navigator>
     </NavigationContainer>
   )

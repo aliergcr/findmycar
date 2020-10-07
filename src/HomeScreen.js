@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, ScrollView } from 'react-native'
 import AsyncStorage from '@react-native-community/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
 import Geocoder from 'react-native-geocoding';
-
+import { API_KEY } from "@env"
 
 const { height, width } = Dimensions.get("window")
 
@@ -13,7 +13,7 @@ export default HomeScreen = ({ navigation }) => {
     const [adress, setAdress] = useState()
 
     useEffect(() => {
-        Geocoder.init("AIzaSyBGR61fCqLig4dnrLXOD5CyCiXR4NVqtuc");
+        Geocoder.init(API_KEY);
         const permissions =
             Platform.OS === 'ios'
                 ? [
@@ -31,7 +31,7 @@ export default HomeScreen = ({ navigation }) => {
             })
             .catch((err) => console.log('Permissions Error', err));
 
-        getAdress()
+        //getAdress()
     }, [])
 
     useFocusEffect(
@@ -55,11 +55,11 @@ export default HomeScreen = ({ navigation }) => {
     return (
         <View style={{ flex: 1, flexDirection: "row", justifyContent: "center", alignItems: "center" }}>
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Map', { type: "findCar" })}>
-                <Text style={styles.cardHeader}>Find Car</Text>
+                <Text style={styles.cardHeader}>Find Your Car</Text>
                 <Text>{adress === "" || adress === null ? "No adress, go to map and park your car" : adress}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Map', { type: "parkCar" })}>
-                <Text style={styles.cardHeader}>Park Car</Text>
+                <Text style={styles.cardHeader}>Park Your Car</Text>
             </TouchableOpacity>
         </View>
     )
