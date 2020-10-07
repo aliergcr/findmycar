@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
-import { Text, Platform, StyleSheet, View, Alert } from 'react-native';
+import { StyleSheet, View, Alert, Dimensions, Image, ScrollView, Text, Platform, TouchableOpacity } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
-import { requestMultiple, PERMISSIONS } from 'react-native-permissions';
-//import Geolocation from '@react-native-community/geolocation';
 import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-community/async-storage';
 import Geocoder from 'react-native-geocoding';
@@ -11,20 +9,31 @@ import CarPositionModal from "./Modals/CarPositionModal"
 import WarningModal from "./Modals/WarningModal"
 import FooterButton from './Components/FooterButton';
 
+import MapViewDirections from 'react-native-maps-directions';
+import { API_KEY } from "@env"
+import Icon from 'react-native-vector-icons/Ionicons';
+
+const { width, height } = Dimensions.get('window');
+const ASPECT_RATIO = width / height;
+const LATITUDE_DELTA = 0.0052;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+
 export default class Map extends Component {
     constructor(props) {
         super(props);
         this._map = React.createRef()
         this.state = {
             carPositionModalVisible: false,
+            showDirection: false,
             carRegion: {},
             userPosition: {},
             isCarPosition: false,
+            directionMode: "WALKING",
             region: {
                 latitude: 37.893071,
                 longitude: 27.264429,
-                latitudeDelta: 0.005,
-                longitudeDelta: 0.005,
+                latitudeDelta: 0.0052,
+                longitudeDelta: 0.0052,
             },
             carMarker: {},
         };
@@ -36,15 +45,14 @@ export default class Map extends Component {
         } else if (this.props.route.params.type === "parkCar") {
             this.getUserPosition();
         }
+
     }
 
     onRegionChangeComplete = (region) => {
-        console.log('region change finish');
         this.setState({ region });
     };
 
     async addMarker(e) {
-        //console.log(e.nativeEvent.coordinate)
         await this.setState({
             carRegion: {
                 ...this.state.region,
@@ -52,8 +60,6 @@ export default class Map extends Component {
                 longitude: e.nativeEvent.coordinate.longitude,
             },
             carMarker: e.nativeEvent.coordinate,
-            title: 'Car Location',
-            description: 'Car is here',
             carPositionModalVisible: true,
             isCarPosition: true,
             warningModalVisible: false
@@ -78,26 +84,11 @@ export default class Map extends Component {
         try {
             await AsyncStorage.setItem('@carAdress', adress);
         } catch (e) {
-            Alert.alert('Yazılamadı');
+            Alert.alert('Please set your car position again.');
         }
     }
 
-    selectPark(newRegion) {
-        //console.log(newRegion)
-        this.setState({
-            region: {
-                ...this.state.region,
-                latitude: newRegion.latitude,
-                longitude: newRegion.longitude,
-            },
-            carMarker: newRegion,
-            title: newRegion.title,
-            description: newRegion.description,
-        });
-    }
-
     async animateToRegion(coords) {
-        console.log("aniamte to region")
         await this._map.current.animateToRegion(
             coords,
             1000
@@ -105,7 +96,6 @@ export default class Map extends Component {
     }
 
     getUserPosition() {
-        console.log("get user position")
         Geolocation.getCurrentPosition(async (position) => {
             setTimeout(() => {
                 this.setState({ userPosition: position.coords })
@@ -115,22 +105,20 @@ export default class Map extends Component {
                     longitude: position.coords.longitude
                 })
             }, 1000);
-
-            //console.log("position=", position)
-
-        }),
+        },
             (error) => console.log('error', error),
-        {
-            enableHighAccuracy: false,
-            timeout: 2000,
-            maximumAge: 1000,
-        };
+            {
+                enableHighAccuracy: false,
+                timeout: 2000,
+                maximumAge: 1000,
+            });
     }
     async getCarPosition() {
 
         let jsonValue;
         try {
             jsonValue = await AsyncStorage.getItem('@carPosition');
+            //console.log(jsonValue)
             jsonValue != null ? this.setState({
                 carMarker: {
                     latitude: JSON.parse(jsonValue).latitude,
@@ -139,9 +127,8 @@ export default class Map extends Component {
                 isCarPosition: true
             }) : null;
         } catch (e) {
-            //error reading value
+            console.log(e)
         }
-        //console.log("jason value", jsonValue)
         if (jsonValue != null) {
             setTimeout(() => {
                 this.animateToRegion(JSON.parse(jsonValue))
@@ -176,9 +163,61 @@ export default class Map extends Component {
         })
     }
 
+    async getDirections() {
+
+        Geolocation.getCurrentPosition(async (position) => {
+            //await this.setState({ })
+            const jsonData = await AsyncStorage.getItem("@carPosition")
+            await this.setState({
+                userPosition: {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                },
+                carMarker: {
+                    latitude: JSON.parse(jsonData).latitude,
+                    longitude: JSON.parse(jsonData).longitude,
+                },
+                isCarPosition: true
+            })
+            if (this.state.userPosition !== {} && this.state.isCarPosition == true) {
+                this.setState({ showDirection: true })
+            } else if (!this.state.isCarPosition) {
+                this.setState({ warningModalVisible: true })
+            }
+
+        },
+            (error) => console.log('error', error),
+            {
+                enableHighAccuracy: false,
+                timeout: 2000,
+                maximumAge: 1000,
+            });
+    }
+
     render() {
         return (
             <View style={styles.container}>
+                {
+                    this.state.showDirection ?
+                        <View style={styles.barContainer}>
+                            <TouchableOpacity
+                                style={[styles.barButton, this.state.directionMode === "DRIVING" ? { backgroundColor: "#00BFFF" } : null]}
+                                onPress={() => {
+                                    this.setState({ directionMode: "DRIVING" })
+                                    //this.getDirections()
+                                }}>
+                                <Icon name="car-sport-outline" style={styles.iconStyle} />
+                                <Text>Driving</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.barButton, this.state.directionMode === "WALKING" ? { backgroundColor: "#00BFFF" } : null]}
+                                onPress={() => this.setState({ directionMode: "WALKING" })}>
+                                <Icon name="walk-outline" style={styles.iconStyle} />
+                                <Text>Walking</Text>
+                            </TouchableOpacity>
+                        </View>
+                        : null}
+
                 <MapView
                     ref={this._map}
                     provider={PROVIDER_GOOGLE}
@@ -195,25 +234,59 @@ export default class Map extends Component {
                 >
                     {this.state.isCarPosition ? <Marker
                         coordinate={this.state.carMarker}
-                        title={this.state.title}
-                        description={this.state.description}
+                        title='Car Location'
+                        description='Car is here'
                         //icon={require('../assets/car_marker.png')}
                         draggable
                         onDragEnd={(e) => this.addMarker(e)}
                     >
-                        {/* <Image
+                        <Image
                             source={require('../assets/car_marker.png')}
-                            style={{ width: 40, height: 40, marginBottom: 30 }}
+                            style={{ width: 40, height: 40 }}
                             resizeMode="contain"
-                        /> */}
+                        />
                     </Marker>
                         : null}
+                    {
+                        this.state.showDirection ? <MapViewDirections
+                            origin={this.state.userPosition}
+                            destination={this.state.carMarker}
+                            apikey={API_KEY}
+                            mode={this.state.directionMode}
+                            strokeWidth={3}
+                            strokeColor="hotpink"
+                            onReady={result => {
+                                console.log(`Distance: ${result.distance} km`)
+                                console.log(`Duration: ${result.duration} min.`)
+                                this._map.current.fitToCoordinates(result.coordinates, {
+                                    edgePadding: {
+                                        right: (width / 10),
+                                        bottom: (height / 10),
+                                        left: (width / 10),
+                                        top: Platform.OS === "ios" ? (height / 10) : (height / 10 + 40),
+                                    }
+                                });
+                            }}
+                        />
+                            : null
+                    }
                 </MapView>
                 <View style={styles.footer}>
-                    <FooterButton iconName="car" onPress={() => this.getCarPosition()} text="Aracım" />
-                    <FooterButton iconName="navigate-circle-outline" onPress={() => this.getUserPosition()} text="Rota Çiz" />
-                    <FooterButton iconName="locate-outline" onPress={() => this.getUserPosition()} text="Konumum" />
-
+                    <FooterButton
+                        iconName="car"
+                        onPress={() => this.getCarPosition()}
+                        text="Aracım"
+                    />
+                    <FooterButton
+                        iconName="navigate-circle-outline"
+                        onPress={() => this.getDirections()}
+                        text="Rota Çiz"
+                    />
+                    <FooterButton
+                        iconName="locate-outline"
+                        onPress={() => { this.getUserPosition() }}
+                        text="Konumum"
+                    />
                 </View>
                 {/* <Parks selectPark={(newRegion) => this.selectPark(newRegion)} /> */}
                 <CarPositionModal
@@ -261,4 +334,32 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginHorizontal: 5
     },
+    barContainer: {
+        flexDirection: "row",
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 10 : 10,
+        paddingHorizontal: 5,
+        zIndex: 3
+    },
+    barButton: {
+        flexDirection: "row",
+        backgroundColor: '#fff',
+        justifyContent: "space-between",
+        alignItems: "center",
+        borderRadius: 20,
+        padding: 8,
+        paddingHorizontal: 20,
+        marginHorizontal: 10,
+        height: 35,
+        shadowColor: '#ccc',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.5,
+        shadowRadius: 5,
+        elevation: 10,
+    },
+    iconStyle: {
+        fontSize: 20,
+        marginRight: 4
+
+    }
 });
