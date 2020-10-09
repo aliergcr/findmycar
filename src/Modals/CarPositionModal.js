@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, Dimensions, TouchableHighlight, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native'
 import Modal from 'react-native-modal';
 
 const { width, height } = Dimensions.get("window")
@@ -13,24 +13,22 @@ export default function CarPositionModal({ isVisible, closeModal, setPosition, r
             //onBackdropPress={() => closeModal()}
             >
                 <View style={styles.content}>
-                    <Text style={{ fontSize: 20 }}>Arabanızın konumu doğru mu?</Text>
+                    <Text style={{ fontSize: 22, fontWeight: "bold" }}>Are you sure?</Text>
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
                             style={styles.buttonStyle}
                             onPress={() => setPosition()}
                         >
-                            <Text style={styles.buttonText}>Doğru</Text>
+                            <Text style={styles.buttonText}>Yes</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={styles.buttonStyle}
                             onPress={() => resetMarker()}
                         >
-                            <Text style={styles.buttonText}>Tekrar seç</Text>
+                            <Text style={styles.buttonText}>Try again</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
-
-
             </Modal>
         </View>
     )

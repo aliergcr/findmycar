@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, Dimensions, TouchableHighlight, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, Dimensions } from 'react-native'
 import Modal from 'react-native-modal';
 
 const { width, height } = Dimensions.get("window")
@@ -15,8 +15,6 @@ export default function WarningModal({ isVisible, closeModal, warningText }) {
                 <View style={styles.content}>
                     <Text style={{ fontSize: 20 }}>{warningText}</Text>
                 </View>
-
-
             </Modal>
         </View>
     )
@@ -31,7 +29,6 @@ const styles = StyleSheet.create({
         flex: 1,
         marginHorizontal: 20,
         marginTop: height / 3,
-        //justifyContent: 'flex-end',
         margin: 0,
     },
     content: {

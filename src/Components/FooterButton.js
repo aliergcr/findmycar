@@ -7,8 +7,8 @@ export default function FooterButton({ onPress, text, iconName }) {
         <TouchableOpacity
             style={styles.buttonStyle}
             onPress={() => onPress()}>
-            <Icon name={iconName} size={30} color="#0c5496" />
-            <Text style={{ color: "#0c5496" }}>{text}</Text>
+            <Icon name={iconName} size={30} color="#fff" />
+            <Text style={{ color: "#fff" }}>{text}</Text>
         </TouchableOpacity>
     )
 }
@@ -18,7 +18,5 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginHorizontal: 5,
-        // borderColor: "#000",
-        // borderWidth: 1
     }
 });
