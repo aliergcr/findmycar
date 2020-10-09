@@ -14,9 +14,6 @@ import { API_KEY } from "@env"
 import Icon from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
-const ASPECT_RATIO = width / height;
-const LATITUDE_DELTA = 0.0052;
-const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default class Map extends Component {
     constructor(props) {
@@ -118,7 +115,6 @@ export default class Map extends Component {
         let jsonValue;
         try {
             jsonValue = await AsyncStorage.getItem('@carPosition');
-            //console.log(jsonValue)
             jsonValue != null ? this.setState({
                 carMarker: {
                     latitude: JSON.parse(jsonValue).latitude,
@@ -143,7 +139,6 @@ export default class Map extends Component {
     async getAdress() {
         Geocoder.from(this.state.carMarker)
             .then(json => {
-                //console.log(json)
                 var addressComponent = json.results[0].formatted_address;
                 this.setAdressToStore(addressComponent)
             })
@@ -155,7 +150,6 @@ export default class Map extends Component {
             await AsyncStorage.removeItem('@carPosition')
             await AsyncStorage.removeItem('@carAdress')
         } catch (e) {
-            // remove error
         }
         this.setState({
             isCarPosition: false,
@@ -166,7 +160,6 @@ export default class Map extends Component {
     async getDirections() {
 
         Geolocation.getCurrentPosition(async (position) => {
-            //await this.setState({ })
             const jsonData = await AsyncStorage.getItem("@carPosition")
             await this.setState({
                 userPosition: {
@@ -204,7 +197,6 @@ export default class Map extends Component {
                                 style={[styles.barButton, this.state.directionMode === "DRIVING" ? { backgroundColor: "#00BFFF" } : null]}
                                 onPress={() => {
                                     this.setState({ directionMode: "DRIVING" })
-                                    //this.getDirections()
                                 }}>
                                 <Icon name="car-sport-outline" style={styles.iconStyle} />
                                 <Text>Driving</Text>
@@ -236,7 +228,6 @@ export default class Map extends Component {
                         coordinate={this.state.carMarker}
                         title='Car Location'
                         description='Car is here'
-                        //icon={require('../assets/car_marker.png')}
                         draggable
                         onDragEnd={(e) => this.addMarker(e)}
                     >
@@ -275,20 +266,19 @@ export default class Map extends Component {
                     <FooterButton
                         iconName="car"
                         onPress={() => this.getCarPosition()}
-                        text="Aracım"
+                        text="My Car"
                     />
                     <FooterButton
                         iconName="navigate-circle-outline"
                         onPress={() => this.getDirections()}
-                        text="Rota Çiz"
+                        text="Route"
                     />
                     <FooterButton
                         iconName="locate-outline"
                         onPress={() => { this.getUserPosition() }}
-                        text="Konumum"
+                        text="My Position"
                     />
                 </View>
-                {/* <Parks selectPark={(newRegion) => this.selectPark(newRegion)} /> */}
                 <CarPositionModal
                     isVisible={this.state.carPositionModalVisible}
                     closeModal={() => this.setState({ carPositionModalVisible: false })}
@@ -298,8 +288,7 @@ export default class Map extends Component {
                 <WarningModal
                     isVisible={this.state.warningModalVisible}
                     closeModal={() => this.setState({ warningModalVisible: false })}
-                    warningText="Kaydedilmiş araç konumu yoktur. Lütfen önce aracınızın konumunu kaydetmek için istediğiniz konumda haritaya basılı tutun"
-
+                    warningText="No car position, please first save your car position by long press on map.."
                 />
             </View>
         );
@@ -309,15 +298,13 @@ export default class Map extends Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // alignItems: "center",
-        // justifyContent: "center"
     },
     footer: {
         flexDirection: "row",
         justifyContent: "space-around",
         alignItems: "center",
         height: 80,
-        backgroundColor: "#fff",
+        backgroundColor: "#0f3057",
     },
     map: {
         flex: 3,
@@ -326,8 +313,6 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         marginHorizontal: 5,
-        // borderColor: "#000",
-        // borderWidth: 1
     },
     carPosition: {
         justifyContent: "center",
@@ -360,6 +345,5 @@ const styles = StyleSheet.create({
     iconStyle: {
         fontSize: 20,
         marginRight: 4
-
     }
 });
